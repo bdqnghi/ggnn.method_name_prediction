@@ -40,14 +40,14 @@ with zipfile.ZipFile(java_small_test_files_zip) as zf:
         except zipfile.error as e:
             pass
 
-with zipfile.ZipFile(java_small_test_files_zip) as zf:
+with zipfile.ZipFile(java_med_test_files_zip) as zf:
     for member in tqdm(zf.infolist(), desc='Extracting '):
         try:
             zf.extract(member, extracted_java_med_files_path)
         except zipfile.error as e:
             pass
-            
-with zipfile.ZipFile(java_small_test_files_zip) as zf:
+
+with zipfile.ZipFile(java_large_test_files_zip) as zf:
     for member in tqdm(zf.infolist(), desc='Extracting '):
         try:
             zf.extract(member, extracted_java_large_files_path)

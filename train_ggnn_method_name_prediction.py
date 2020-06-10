@@ -393,9 +393,11 @@ def main(opt):
                         val_label_lookup.inverse[ground_truth])
                 
                 f1_score = evaluation.calculate_f1_scores(predicted_labels, ground_truth_labels)
-                print(ground_truth_labels)
-                print(predicted_labels)
-                print("F1:", f1_score, "Step:", val_step)
+                print("Ground truth : " + str(ground_truth_labels))
+                print("Predicted : " + str(predicted_labels))
+
+                # This is to see something print on the monitor instead of waiting too long for the average F1
+                print("F1 at batch:", f1_score, "Step:", val_step)
                 all_predicted_labels.extend(predicted_labels)
                 all_ground_truth_labels.extend(ground_truth_labels)
 
