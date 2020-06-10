@@ -1,4 +1,4 @@
-DATA=sample_data
+DATA=data
 DATASET=java-small
 DATASET_TRANSFORMED=java-small-graph-transformed
 TRAIN_PATH=${DATA}/${DATASET_TRANSFORMED}/training

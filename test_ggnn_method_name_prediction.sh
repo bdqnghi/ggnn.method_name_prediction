@@ -1,4 +1,4 @@
-DATA=sample_data
+DATA=data
 DATASET=java-small
 DATASET_TRANSFORMED=${DATASET}-graph-transformed
 VAL_PATH=${DATA}/${DATASET_TRANSFORMED}/testing
