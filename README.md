@@ -23,7 +23,7 @@ source test_ggnn_method_name_prediction.sh
 It will print some thing like this on the console:
 ![Sample](figures/sample_testing.png)
 
-Then it means that you can have done the steps correctly.
+Then it means that you have done the steps correctly.
 
 There is a parameter called Dataset in the script ```test_ggnn_method_name_prediction.sh```, it will point to the corresponding model and the corresponding dataset to test.
 At the moment, default is Dataset=java-small, you can change to Dataset=java-med or Dataset=java-large for test on the java-med and java-large dataset.
