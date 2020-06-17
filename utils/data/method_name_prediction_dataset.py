@@ -469,28 +469,29 @@ class MethodNamePredictionData():
             
             # name of label, e.g. getString
             
+            label = int(label)
+            if label != -1:
+                label_name = self.label_lookup.inverse[int(label)]
 
-            label_name = self.label_lookup.inverse[int(label)]
+                label_name_sub_tokens = identifier_splitting.split_identifier_into_parts(label_name)
+                label_name_sub_token_ids = [self.target_token_lookup["<GO>"]] 
+                for token in label_name_sub_tokens:
+                    token_id = self.look_up_for_id_of_target_token(token)
+                    if token_id != 0:
+                        label_name_sub_token_ids.append(token_id)
+                label_name_sub_token_ids.append(self.target_token_lookup["<EOS>"])
 
-            label_name_sub_tokens = identifier_splitting.split_identifier_into_parts(label_name)
-            label_name_sub_token_ids = [self.target_token_lookup["<GO>"]] 
-            for token in label_name_sub_tokens:
-                token_id = self.look_up_for_id_of_target_token(token)
-                if token_id != 0:
-                    label_name_sub_token_ids.append(token_id)
-            label_name_sub_token_ids.append(self.target_token_lookup["<EOS>"])
+                print(label_name_sub_token_ids)
 
-            print(label_name_sub_token_ids)
-
-            # adj_mat': graph_to_adj_mat(graph, chosen_bucket_size, self.n_edge_types, True),
-            buckets[chosen_bucket_idx].append({
-                "graph": graph,
-                "node_type_indices": node_type_indices,
-                "node_token_indices": node_token_indices,
-                "labels": int(label),
-                "labels_sub_tokens": label_name_sub_token_ids,
-                "path": path   
-            })
+                # adj_mat': graph_to_adj_mat(graph, chosen_bucket_size, self.n_edge_types, True),
+                buckets[chosen_bucket_idx].append({
+                    "graph": graph,
+                    "node_type_indices": node_type_indices,
+                    "node_token_indices": node_token_indices,
+                    "labels": int(label),
+                    "labels_sub_tokens": label_name_sub_token_ids,
+                    "path": path   
+                })
 
         print("Merging buckets.....")
         #------------------------
