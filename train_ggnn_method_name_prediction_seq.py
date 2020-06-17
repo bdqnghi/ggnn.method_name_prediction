@@ -45,7 +45,7 @@ parser.add_argument('--n_steps', type=int, default=10,
                     help='propagation steps number of GGNN')
 parser.add_argument('--n_edge_types', type=int, default=7,
                     help='number of edge types')
-parser.add_argument('--epochs', type=int, default=1000,
+parser.add_argument('--epochs', type=int, default=10,
                     help='number of epochs to train for')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--cuda', default="0", type=str, help='enables cuda')
@@ -417,7 +417,7 @@ def main(opt):
                 predicted_labels = []
 
                 for i, predicted_indices in enumerate(batch_predicted_indices):
-                    print("++++++")
+                    # print("++++++")
                     predicted_strings = [[target_token_lookup.inverse[sugg] for sugg in timestep]for timestep in predicted_indices]  # (target_length, top-k)  
                     predicted_strings = list(map(list, zip(*predicted_strings)))  # (top-k, target_length)
                     top_scores = [np.exp(np.sum(s)) for s in zip(*batch_top_scores[i])]
@@ -425,7 +425,7 @@ def main(opt):
                     
                     predicted_labels.append("_".join(predicted_strings[top_scores_max]))
 
-                print(predicted_labels)
+                # print(predicted_labels)
 
                 # predicted_labels = []
                 # for prediction_score in prediction_scores[0]:
