@@ -222,7 +222,7 @@ class MethodNamePredictionData():
             self.batch_size = opt.batch_size
         if is_validating:
             print("Processing validation data....")
-            self.batch_size = opt.val_batch_size
+            self.batch_size = opt.batch_size
         # self.node_dim = opt.node_dim
         self.state_dim = opt.state_dim
 
