@@ -12,6 +12,8 @@ import pyarrow
 from collections import defaultdict
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
+from utils import identifier_splitting
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 def load_graphs_from_file(file_name):
     data_list = []
@@ -231,6 +233,8 @@ class MethodNamePredictionData():
         self.num_labels = len(opt.label_lookup.keys())
         self.graph_size_threshold = opt.graph_size_threshold
         self.sampling_size = opt.sampling_size
+        self.label_lookup = opt.label_lookup
+        self.target_token_lookup = opt.target_token_lookup
 
         base_name =os.path.basename(data_path)
         parent_base_name = os.path.basename(os.path.dirname(data_path))
@@ -383,6 +387,14 @@ class MethodNamePredictionData():
     
         return node_id_data_list, node_type_data_list, node_token_data_list
 
+    def look_up_for_id_of_target_token(self, token):
+        
+        token_id = self.target_token_lookup["<PAD>"]
+        if token in self.target_token_lookup:
+            token_id = self.target_token_lookup[token]
+
+        return token_id
+
     # ----- Data preprocessing and chunking into minibatches:
     def process_raw_graphs(self):
         print("Processing raw graphs........")
@@ -454,8 +466,21 @@ class MethodNamePredictionData():
                 if len(tgt_node_tokens) > 0:
                     node_token_indices[int(tgt_node_id)] = tgt_node_tokens
                 # print("SRC node id : " + str(src_node_id))
-        
+            
+            # name of label, e.g. getString
+            
 
+            label_name = self.label_lookup.inverse[int(label)]
+
+            label_name_sub_tokens = identifier_splitting.split_identifier_into_parts(label_name)
+            label_name_sub_token_ids = [self.target_token_lookup["<GO>"]] 
+            for token in label_name_sub_tokens:
+                token_id = self.look_up_for_id_of_target_token(token)
+                if token_id != 0:
+                    label_name_sub_token_ids.append(token_id)
+            label_name_sub_token_ids.append(self.target_token_lookup["<EOS>"])
+
+            print(label_name_sub_token_ids)
 
             # adj_mat': graph_to_adj_mat(graph, chosen_bucket_size, self.n_edge_types, True),
             buckets[chosen_bucket_idx].append({
@@ -463,6 +488,7 @@ class MethodNamePredictionData():
                 "node_type_indices": node_type_indices,
                 "node_token_indices": node_token_indices,
                 "labels": int(label),
+                "labels_sub_tokens": label_name_sub_token_ids,
                 "path": path   
             })
 
@@ -540,8 +566,19 @@ class MethodNamePredictionData():
             # print("After shape :" + str(node_token_indices[i].shape))
         return node_token_indices
 
+    def _produce_mask_vector(self, nodes):
+        masks = []
+
+        for n in nodes:        
+            mask = [1 for i in range(len(n))]
+            masks.append(mask)
+
+        padded_inputs = pad_sequences(masks, padding='post')
+        return padded_inputs
+
+
     def make_batch(self, elements):
-        batch_data = {'adjacency_matrix': [], 'node_type_indices': [], "node_token_indices": [],  'labels': [], 'paths':[]}
+        batch_data = {'adjacency_matrix': [], 'node_type_indices': [], "node_token_indices": [],  'labels': [], 'labels_sub_tokens': [], 'paths':[], "length_targets":[]}
 
         # find graph which has the largest number of nodes in batch
 
@@ -556,14 +593,17 @@ class MethodNamePredictionData():
             num_sub_tokens_of_graph = d['node_token_indices'].shape[1]
             if num_sub_tokens_of_batch < num_sub_tokens_of_graph:
                 num_sub_tokens_of_batch = num_sub_tokens_of_graph
-            
+        
+     
         for d in elements:
             adjacency_matrix = graph_to_adj_mat(d["graph"], num_nodes_of_batch, self.n_edge_types, True)
             batch_data['adjacency_matrix'].append(adjacency_matrix)
             batch_data['node_type_indices'].append(d['node_type_indices'])
             batch_data['node_token_indices'].append(d['node_token_indices'])
             batch_data['labels'].append(d['labels'])
+            batch_data['labels_sub_tokens'].append(d['labels_sub_tokens'])
             batch_data['paths'].append(d['path'])
+            batch_data['length_targets'].append(len(d['labels_sub_tokens']))
 
         # batch_data["init"] = self.pad_batch(batch_data['init'], max_node + 1)
         batch_data['node_type_indices'] = self.pad_node_types(batch_data['node_type_indices'], num_nodes_of_batch)
@@ -577,7 +617,10 @@ class MethodNamePredictionData():
         # batch_data['init'] = np.array(batch_data['init'])[0:len(batch_data['init'])]
         
         batch_data['labels'] = np.stack(batch_data['labels'],  axis=0 )
+        batch_data['labels_sub_tokens'] = pad_sequences(batch_data['labels_sub_tokens'], padding='post', value=self.target_token_lookup["<PAD>"])
 
+        batch_data['node_indicators'] = self._produce_mask_vector(batch_data['node_type_indices']) 
+        # print(batch_data['labels_sub_tokens'])
         # print("adj shape : " + str(batch_data['adjacency_matrix'].shape))
         # print("init shape : " + str(batch_data['init'].shape))
 
@@ -585,16 +628,15 @@ class MethodNamePredictionData():
 
     def make_minibatch_iterator(self):
         (buckets, bucket_sizes, bucket_at_step) = self.data
-        bucket_counters = defaultdict(int)
-        
-        buckets_to_process = defaultdict(list)
+        bucket_ids = list(buckets.keys())
+        random.shuffle(bucket_ids)
 
-        if self.is_training:
-            print("Shuffling training data...........")
+        # if self.is_training:
+        #     print("Shuffling training data...........")
             # np.random.shuffle(bucket_at_step)
-            for bucket_idx , buckets_data in buckets.items():
+            # for bucket_idx , buckets_data in buckets.items():
                 # np.random.shuffle(buckets_data)
-                buckets_to_process[bucket_idx] = random.sample(buckets_data, int(len(buckets_data)/self.sampling_size))
+                # buckets_to_process[bucket_idx] = random.sample(buckets_data, int(len(buckets_data)/self.sampling_size))
         # if self.is_validating:
         #     print("Select subset of validation data...........")
         #     # np.random.shuffle(bucket_at_step)
@@ -602,13 +644,15 @@ class MethodNamePredictionData():
         #         # np.random.shuffle(buckets_data)
         #         # buckets_to_process[bucket_idx] = random.sample(buckets_data, int(len(buckets_data)/20))  
         #         buckets_to_process[bucket_idx] = buckets_data[:int(len(buckets_data)/10)]
-        else:
-            buckets_to_process = buckets
-        
+        # else:
+        buckets_to_process = buckets
+
         # buckets_to_process = buckets
             
-        for bucket_idx, bucket_data in buckets_to_process.items():
-
+        for bucket_idx in bucket_ids:
+            bucket_data = buckets[bucket_idx]
+            random.shuffle(bucket_data)
+     
             elements = []
             samples = 0
             
@@ -623,34 +667,37 @@ class MethodNamePredictionData():
                 # else:
                 #     elements.append(element)
                 #     samples += 1
-                if (samples >= self.batch_size) or ((i == len(bucket_data)-1)):
-                    if len(elements) > 0:
-                        batch_data, batch_max_node = self.make_batch(elements)
-                        num_graphs = len(batch_data['node_type_indices'])
-                        node_type_indices = np.array(batch_data['node_type_indices'])
-                        node_token_indices = np.array(batch_data['node_token_indices'])
-                        # print(initial_representations.shape)
+                if (samples >= self.batch_size):
+                    
+                    batch_data, batch_max_node = self.make_batch(elements)
+                    num_graphs = len(batch_data['node_type_indices'])
+                    node_type_indices = np.array(batch_data['node_type_indices'])
+                    node_token_indices = np.array(batch_data['node_token_indices'])
+                    # print(initial_representations.shape)
 
-                        batch_labels_one_hot = []
-                        for label in batch_data['labels']:
-                            one_hot = _onehot(label, self.num_labels)
-                            batch_labels_one_hot.append(one_hot)
+                    batch_labels_one_hot = []
+                    for label in batch_data['labels']:
+                        one_hot = _onehot(label, self.num_labels)
+                        batch_labels_one_hot.append(one_hot)
 
-                        batch_labels_one_hot = np.asarray(batch_labels_one_hot)
-                        batch = {
-                            "num_graphs": num_graphs,
-                            "node_type_indices": node_type_indices,
-                            "node_token_indices": node_token_indices,
-                            "num_vertices": batch_max_node,
-                            "adjacency_matrix": batch_data['adjacency_matrix'],
-                            "labels": batch_labels_one_hot,
-                            "labels_index": batch_data['labels'],
-                            "paths": batch_data['paths']
-                        }
+                    batch_labels_one_hot = np.asarray(batch_labels_one_hot)
+                    batch = {
+                        "num_graphs": num_graphs,
+                        "node_type_indices": node_type_indices,
+                        "node_token_indices": node_token_indices,
+                        "num_vertices": batch_max_node,
+                        "adjacency_matrix": batch_data['adjacency_matrix'],
+                        "labels": batch_labels_one_hot,
+                        "labels_index": batch_data['labels'],
+                        "labels_sub_tokens": batch_data['labels_sub_tokens'],
+                        "length_targets": batch_data['length_targets'],
+                        "node_indicators": batch_data['node_indicators'],
+                        "paths": batch_data['paths']
+                    }
 
-                        yield batch
-                        elements = []
-                        samples = 0
+                    yield batch
+                    elements = []
+                    samples = 0
 
         # for step in range(len(bucket_at_step)):
         #     # print("-------------")
