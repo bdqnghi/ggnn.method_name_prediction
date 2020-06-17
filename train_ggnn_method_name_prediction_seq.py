@@ -390,6 +390,7 @@ def main(opt):
             all_ground_truth_labels = []
             for val_step, val_batch_data in enumerate(validation_batch_iterator):
                 print("----------------------------------------")
+                print(val_batch_data['labels_index'])
                 prediction_scores = sess.run(
                     [ggnn.inference_sample_id],
                     feed_dict={
@@ -417,7 +418,7 @@ def main(opt):
                             
                     predicted_labels.append("_".join(prediction))
                 
-               
+
                 # ground_truths = np.argmax(val_batch_data['labels_index'], axis=1)
                 ground_truth_labels = []
                 for ground_truth in val_batch_data['labels_index']:
