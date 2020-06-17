@@ -76,7 +76,7 @@ parser.add_argument('--distributed_function', type=int, default=0,
                     choices=range(0, 2), help='0 for softmax, 1 for sigmoid')
 parser.add_argument('--train_path', default="sample_data/java-small-graph-transformed/training",
                     help='path of training data')
-parser.add_argument('--val_path', default="sample_data/java-small-graph-transformed/validation",
+parser.add_argument('--val_path', default="sample_data/java-small-graph-transformed/testing",
                     help='path of validation data')
 parser.add_argument('--dataset', default="java-small",
                     help='name of dataset')
@@ -390,45 +390,50 @@ def main(opt):
             all_ground_truth_labels = []
             for val_step, val_batch_data in enumerate(validation_batch_iterator):
                 print("----------------------------------------")
-                label_embeddings_matrix, scores = sess.run(
-                    [label_embeddings, logits],
+                prediction_scores = sess.run(
+                    [ggnn.inference_sample_id],
                     feed_dict={
                         ggnn.placeholders["num_vertices"]: val_batch_data["num_vertices"],
                         ggnn.placeholders["adjacency_matrix"]:  val_batch_data['adjacency_matrix'],
                         ggnn.placeholders["node_type_indices"]: val_batch_data["node_type_indices"],
                         ggnn.placeholders["node_token_indices"]: val_batch_data["node_token_indices"],
-                        ggnn.placeholders["is_training"]: False
+                        ggnn.placeholders["targets"]: val_batch_data["labels_sub_tokens"],
+                        ggnn.placeholders["length_targets"]: val_batch_data["length_targets"],
+                        ggnn.placeholders["node_indicators"]: val_batch_data["node_indicators"],
+                        ggnn.placeholders["is_training"]: True
                     }
                 )
 
-                predictions = np.argmax(scores, axis=1)
-                ground_truths = np.argmax(val_batch_data['labels'], axis=1)
+                # print(prediction_scores[0])
+                # print(val_batch_data["batch_targets"])
                 
                 predicted_labels = []
-                for prediction in predictions:
-                    predicted_labels.append(train_label_lookup.inverse[prediction])
-
+                for prediction_score in prediction_scores[0]:
+                    prediction = []
+                    for token_id in prediction_score:
+                        if token_id != 0 and token_id != 1 and token_id != 2:
+                            token = target_token_lookup.inverse[token_id]
+                            prediction.append(token)
+                            
+                    predicted_labels.append("_".join(prediction))
+                
+               
+                # ground_truths = np.argmax(val_batch_data['labels_index'], axis=1)
                 ground_truth_labels = []
-                for ground_truth in ground_truths:
+                for ground_truth in val_batch_data['labels_index']:
                     ground_truth_labels.append(
                         val_label_lookup.inverse[ground_truth])
                 
-                f1_score = evaluation.calculate_f1_scores(predicted_labels, ground_truth_labels)
-                print("Ground truth : " + str(ground_truth_labels))
                 print("Predicted : " + str(predicted_labels))
-
-                # This is to see something print on the monitor instead of waiting too long for the average F1
-                print("F1 at batch:", f1_score, "Step:", val_step)
+                print("Ground truth : " + str(ground_truth_labels))
+                f1_score = evaluation.calculate_f1_scores(predicted_labels, ground_truth_labels)
+                print("F1:", f1_score, "Step:", val_step)
                 all_predicted_labels.extend(predicted_labels)
                 all_ground_truth_labels.extend(ground_truth_labels)
 
-                        
             average_f1 = evaluation.calculate_f1_scores(all_predicted_labels, all_ground_truth_labels)
-            average_precision = evaluation.calculate_precisions(all_predicted_labels, all_ground_truth_labels)
-            average_recall = evaluation.calculate_recalls(all_predicted_labels, all_ground_truth_labels)
             # print("F1 score : " + str(f1_score))
-            
-            print("F1:", average_f1, "Precision:", average_precision, "Recall:", average_recall)
+            print("Validation with F1 score ", average_f1)
          
           
 
