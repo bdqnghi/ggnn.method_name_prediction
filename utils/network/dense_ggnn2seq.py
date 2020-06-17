@@ -54,6 +54,8 @@ class DenseGGNNModel():
 
         self.rnn_size = self.node_type_dim + self.node_token_dim
         self.num_rnn_layers = 3
+        self.beam_width = 10
+        self.is_evaluating = opt.task
 
         self.hidden_layer_size = opt.hidden_layer_size
         self.num_hidden_layer = opt.num_hidden_layer
@@ -68,12 +70,17 @@ class DenseGGNNModel():
         self.prepare_specific_graph_model()
         self.nodes_representation = self.compute_nodes_representation()
         # self.graph_representation = self.pooling_layer(self.nodes_representation)
-
+        
 
         self.graph_representation = self.aggregation_layer(self.nodes_representation)
+
+        
         self.fake_encoder_state = tuple(tf.nn.rnn_cell.LSTMStateTuple(self.graph_representation, self.graph_representation) for _ in range(self.num_rnn_layers))
         
-        
+        if self.is_evaluating == 0:
+            print("Evaluating, tile batch contexts...........")
+            self.nodes_representation = tf.contrib.seq2seq.tile_batch(self.nodes_representation, multiplier=self.beam_width)
+
         self.training_logits, self.inference_logits, self.training_final_state, self.inference_final_state = self.decoding_layer(targets=self.placeholders["targets"],
                                                 target_token_embeddings=self.target_token_embeddings,
                                                 contexts=self.nodes_representation,
@@ -88,8 +95,8 @@ class DenseGGNNModel():
                                                 max_target_sequence_length=self.max_target_sequence_length)        
         self.training_output = tf.identity(self.training_logits.rnn_output, name='training_output')
         self.training_sample_id = tf.identity(self.training_logits.sample_id, name='training_sample_id')
-        self.inference_output = tf.identity(self.inference_logits.rnn_output, name='inference_output')
-        self.inference_sample_id = tf.identity(self.inference_logits.sample_id, name='inference_sample_id')
+        # self.inference_output = tf.identity(self.inference_logits.rnn_output, name='inference_output')
+        # self.inference_sample_id = tf.identity(self.inference_logits.sample_id, name='inference_sample_id')
 
         self.loss = self.loss_layer(self.training_output, self.placeholders["targets"], self.target_mask)
 
@@ -163,9 +170,10 @@ class DenseGGNNModel():
                                                            attention_layer_size=rnn_size)
 
         # decoder_cell = tf.contrib.rnn.DropoutWrapper(decoder_cell, output_keep_prob=0.3)
-        initial_state = decoder_cell.zero_state(batch_size, tf.float32).clone(cell_state=encoder_state)
+        
         output_layer = tf.layers.Dense(target_vocab_size)
         with tf.variable_scope("decode"):
+            initial_state = decoder_cell.zero_state(batch_size, tf.float32).clone(cell_state=encoder_state)
             target_embeddings = tf.nn.embedding_lookup(target_token_embeddings, targets)
             helper = tf.contrib.seq2seq.TrainingHelper(target_embeddings, target_sequence_length)
             decoder = tf.contrib.seq2seq.BasicDecoder(decoder_cell, helper, initial_state, output_layer)
@@ -174,10 +182,26 @@ class DenseGGNNModel():
                                                     maximum_iterations=max_target_sequence_length)
         with tf.variable_scope("decode", reuse=True):
             helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(target_token_embeddings, tf.fill([batch_size], start_of_sequence_id), end_of_sequence_id)
-            decoder = tf.contrib.seq2seq.BasicDecoder(decoder_cell, helper, initial_state, output_layer)
-            inference_logits, inference_final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, 
-                                                    impute_finished=True, 
-                                                    maximum_iterations=4)
+            # decoder = tf.contrib.seq2seq.BasicDecoder(decoder_cell, helper, initial_state, output_layer)
+            # inference_logits, inference_final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, 
+            #                                         impute_finished=True, 
+            #                                         maximum_iterations=4)
+
+
+            initial_state = decoder_cell.zero_state(dtype=tf.float32,
+                                                                batch_size=self.batch_size * self.beam_width)
+            initial_state = initial_state.clone(cell_state=tf.contrib.seq2seq.tile_batch(encoder_state, multiplier=self.beam_width))
+            decoder = tf.contrib.seq2seq.BeamSearchDecoder(
+                cell=decoder_cell,
+                embedding=target_token_embeddings,
+                start_tokens=tf.fill([batch_size], start_of_sequence_id),
+                end_token=end_of_sequence_id,
+                initial_state=initial_state,
+                beam_width=self.beam_width,
+                output_layer=output_layer,
+                length_penalty_weight=0.0)
+
+            inference_logits, inference_final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, impute_finished=False, maximum_iterations=4)
       
     
         return training_logits, inference_logits, training_final_state, inference_final_state

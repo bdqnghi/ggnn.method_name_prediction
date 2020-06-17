@@ -392,7 +392,7 @@ def main(opt):
                 print("----------------------------------------")
                 # print(val_batch_data['labels_index'])
                 prediction_scores = sess.run(
-                    [ggnn.inference_sample_id],
+                    [ggnn.inference_logits],
                     feed_dict={
                         ggnn.placeholders["num_vertices"]: val_batch_data["num_vertices"],
                         ggnn.placeholders["adjacency_matrix"]:  val_batch_data['adjacency_matrix'],
@@ -405,18 +405,37 @@ def main(opt):
                     }
                 )
 
-                # print(prediction_scores[0])
+                batch_predicted_indices = prediction_scores[0].predicted_ids
+                batch_top_scores = prediction_scores[0].beam_search_decoder_output.scores
+                # print(prediction_scores[0].predicted_ids)
+                # print(prediction_scores[0].beam_search_decoder_output.scores)
+                # print(prediction_scores[0].predicted_ids.shape)
+                # print(prediction_scores[0].beam_search_decoder_output.scores.shape)
                 # print(val_batch_data["batch_targets"])
                 
+
                 predicted_labels = []
-                for prediction_score in prediction_scores[0]:
-                    prediction = []
-                    for token_id in prediction_score:
-                        if token_id != 0 and token_id != 1 and token_id != 2:
-                            token = target_token_lookup.inverse[token_id]
-                            prediction.append(token)
+
+                for i, predicted_indices in enumerate(batch_predicted_indices):
+                    print("++++++")
+                    predicted_strings = [[target_token_lookup.inverse[sugg] for sugg in timestep]for timestep in predicted_indices]  # (target_length, top-k)  
+                    predicted_strings = list(map(list, zip(*predicted_strings)))  # (top-k, target_length)
+                    top_scores = [np.exp(np.sum(s)) for s in zip(*batch_top_scores[i])]
+                    top_scores_max = np.argmax(top_scores)
+                    
+                    predicted_labels.append("_".join(predicted_strings[top_scores_max]))
+
+                print(predicted_labels)
+
+                # predicted_labels = []
+                # for prediction_score in prediction_scores[0]:
+                #     prediction = []
+                #     for token_id in prediction_score:
+                #         if token_id != 0 and token_id != 1 and token_id != 2:
+                #             token = target_token_lookup.inverse[token_id]
+                #             prediction.append(token)
                             
-                    predicted_labels.append("_".join(prediction))
+                #     predicted_labels.append("_".join(prediction))
                 
 
                 # ground_truths = np.argmax(val_batch_data['labels_index'], axis=1)
