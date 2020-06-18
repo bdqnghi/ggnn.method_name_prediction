@@ -474,11 +474,13 @@ class MethodNamePredictionData():
                 label_name = self.label_lookup.inverse[int(label)]
 
                 label_name_sub_tokens = identifier_splitting.split_identifier_into_parts(label_name)
-                label_name_sub_token_ids = [self.target_token_lookup["<GO>"]] 
+                label_name_sub_token_ids = [self.target_token_lookup["<GO>"]]
+                
                 for token in label_name_sub_tokens:
                     token_id = self.look_up_for_id_of_target_token(token)
                     if token_id != 0:
                         label_name_sub_token_ids.append(token_id)
+                      
                 label_name_sub_token_ids.append(self.target_token_lookup["<EOS>"])
 
                 print(label_name_sub_token_ids)
@@ -680,6 +682,12 @@ class MethodNamePredictionData():
                     for label in batch_data['labels']:
                         one_hot = _onehot(label, self.num_labels)
                         batch_labels_one_hot.append(one_hot)
+
+                    # batch_sub_label_onehot = []
+                    # for label_sub_token in batch_data['labels_sub_tokens']:
+                    #     token_id_onehot = _onehot(label_sub_token, len(self.target_token_lookup.keys()))
+                    #     batch_sub_label_onehot.append(token_id_onehot)
+
 
                     batch_labels_one_hot = np.asarray(batch_labels_one_hot)
                     batch = {

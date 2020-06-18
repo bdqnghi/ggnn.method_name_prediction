@@ -271,11 +271,23 @@ def main(opt):
                             ggnn.placeholders["node_type_indices"]: train_batch_data["node_type_indices"],
                             ggnn.placeholders["node_token_indices"]: train_batch_data["node_token_indices"],
                             ggnn.placeholders["targets"]: train_batch_data["labels_sub_tokens"],
-                            ggnn.placeholders["length_targets"]: train_batch_data["length_targets"],
-                            ggnn.placeholders["node_indicators"]: train_batch_data["node_indicators"],
                             ggnn.placeholders["is_training"]: True
                         }
                     )
+
+                    # _, err = sess.run(
+                    #     [training_point, loss_node],
+                    #     feed_dict={
+                    #         ggnn.placeholders["num_vertices"]: train_batch_data["num_vertices"],
+                    #         ggnn.placeholders["adjacency_matrix"]:  train_batch_data['adjacency_matrix'],
+                    #         ggnn.placeholders["node_type_indices"]: train_batch_data["node_type_indices"],
+                    #         ggnn.placeholders["node_token_indices"]: train_batch_data["node_token_indices"],
+                    #         ggnn.placeholders["targets"]: train_batch_data["labels_sub_tokens_onehot"],
+                    #         ggnn.placeholders["length_targets"]: train_batch_data["length_targets"],
+                    #         ggnn.placeholders["node_indicators"]: train_batch_data["node_indicators"],
+                    #         ggnn.placeholders["is_training"]: True
+                    #     }
+                    # )
                     # scores = sess.run(
                     #     [ggnn.nodes_representation],
                     #     feed_dict={
