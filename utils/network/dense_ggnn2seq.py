@@ -53,7 +53,7 @@ class DenseGGNNModel():
         self.target_token_lookup = opt.target_token_lookup
 
         self.rnn_size = self.node_type_dim + self.node_token_dim
-        self.num_rnn_layers = 3
+        self.num_rnn_layers = 1
         self.beam_width = 10
         self.is_evaluating = opt.task
 
