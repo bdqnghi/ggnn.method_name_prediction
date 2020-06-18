@@ -275,6 +275,23 @@ def main(opt):
                         }
                     )
 
+                    # batch_ground_truth_sub_tokens = train_batch_data["labels_sub_tokens"]
+                    # batch_ground_truth_sub_tokens_labels = []
+                    # for ground_truth_sub_tokens in batch_ground_truth_sub_tokens:
+                    #     ground_truth_sub_tokens_labels = []
+                    #     for token_id in ground_truth_sub_tokens:
+                    #         token = target_token_lookup.inverse[token_id]
+                    #         ground_truth_sub_tokens_labels.append(token)
+                    #     batch_ground_truth_sub_tokens_labels.append(ground_truth_sub_tokens_labels)
+
+                    # batch_original_labels = train_batch_data["labels_index"]
+                    # original_labels_token = []
+                    # for original_label in batch_original_labels:
+                    #     l = train_label_lookup.inverse[original_label]
+                    #     original_labels_token.append(l)
+                    # print(batch_ground_truth_sub_tokens_labels)
+                    # print(original_labels_token)
+
                     # _, err = sess.run(
                     #     [training_point, loss_node],
                     #     feed_dict={
@@ -405,7 +422,6 @@ def main(opt):
                         ggnn.placeholders["is_training"]: False
                     }
                 )
-
         
                 batch_predicted_indices = prediction_scores[0].predicted_ids
                 batch_top_scores = prediction_scores[0].beam_search_decoder_output.scores

@@ -165,11 +165,14 @@ class DenseGGNNModel():
             num_units=rnn_size,
             memory=contexts
         )
-       
-        decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
-                                                           attention_layer_size=rnn_size)
 
-        
+        should_save_alignment_history = True
+        # 0 mean testing
+        if is_evaluating == 0:
+            should_save_alignment_history = False
+
+        decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
+                                                           attention_layer_size=rnn_size, alignment_history=should_save_alignment_history)
         
         output_layer = tf.layers.Dense(target_vocab_size)
         with tf.variable_scope("decode"):
@@ -283,7 +286,7 @@ class DenseGGNNModel():
             max_tree_size = tf.shape(nodes_representation)[1]
 
             contexts_sum = tf.reduce_sum(nodes_representation, axis=1)
-            contexts_sum_average = tf.divide(contexts_sum, tf.to_float(tf.expand_dims(max_tree_size, -1)))
+            # contexts_sum_average = tf.divide(contexts_sum, tf.to_float(tf.expand_dims(max_tree_size, -1)))
           
             return contexts_sum_average
 
