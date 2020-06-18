@@ -286,7 +286,7 @@ class DenseGGNNModel():
             max_tree_size = tf.shape(nodes_representation)[1]
 
             contexts_sum = tf.reduce_sum(nodes_representation, axis=1)
-            # contexts_sum_average = tf.divide(contexts_sum, tf.to_float(tf.expand_dims(max_tree_size, -1)))
+            contexts_sum_average = tf.divide(contexts_sum, tf.to_float(tf.expand_dims(max_tree_size, -1)))
           
             return contexts_sum_average
 
