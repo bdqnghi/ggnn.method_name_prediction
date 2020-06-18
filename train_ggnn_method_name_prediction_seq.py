@@ -415,7 +415,6 @@ def main(opt):
                 
 
                 predicted_labels = []
-
                 for i, predicted_indices in enumerate(batch_predicted_indices):
                     # print("++++++")
                     predicted_strings = [[target_token_lookup.inverse[sugg] for sugg in timestep]for timestep in predicted_indices]  # (target_length, top-k)  
@@ -423,7 +422,12 @@ def main(opt):
                     top_scores = [np.exp(np.sum(s)) for s in zip(*batch_top_scores[i])]
                     top_scores_max = np.argmax(top_scores)
                     
-                    predicted_labels.append("_".join(predicted_strings[top_scores_max]))
+                    highest_score_prediction_string = predicted_strings[top_scores_max]
+                    highest_score_prediction_string_temp = []
+                    for token in highest_score_prediction_string:
+                        if token != "<GO>" and token_id != "<PAD>" and token_id != "<EOS>":
+                            highest_score_prediction_string_temp.append(token)
+                    predicted_labels.append("_".join(highest_score_prediction_string_temp))
 
                 # print(predicted_labels)
 
