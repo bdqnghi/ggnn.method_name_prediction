@@ -222,6 +222,8 @@ class DenseGGNNModel():
 
         h = tf.concat([self.node_type_representations, self.node_token_representations], -1)
         h = tf.reshape(h, [-1, self.node_token_dim + self.node_type_dim])
+        h = tf.layers.dense(inputs=h, units=self.node_dim,
+                                                    activation=tf.nn.tanh, use_bias=False)
 
         with tf.compat.v1.variable_scope("gru_scope") as scope:
             for i in range(self.num_timesteps):
