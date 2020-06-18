@@ -271,6 +271,8 @@ def main(opt):
                             ggnn.placeholders["node_type_indices"]: train_batch_data["node_type_indices"],
                             ggnn.placeholders["node_token_indices"]: train_batch_data["node_token_indices"],
                             ggnn.placeholders["targets"]: train_batch_data["labels_sub_tokens"],
+                            ggnn.placeholders["length_targets"]: train_batch_data["length_targets"],
+                            ggnn.placeholders["node_indicators"]: train_batch_data["node_indicators"],
                             ggnn.placeholders["is_training"]: True
                         }
                     )
@@ -419,6 +421,8 @@ def main(opt):
                         ggnn.placeholders["adjacency_matrix"]:  val_batch_data['adjacency_matrix'],
                         ggnn.placeholders["node_type_indices"]: val_batch_data["node_type_indices"],
                         ggnn.placeholders["node_token_indices"]: val_batch_data["node_token_indices"],
+                        ggnn.placeholders["length_targets"]: val_batch_data["length_targets"],
+                        ggnn.placeholders["node_indicators"]: val_batch_data["node_indicators"],
                         ggnn.placeholders["is_training"]: False
                     }
                 )

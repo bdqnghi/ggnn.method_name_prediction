@@ -109,6 +109,6 @@ venv.bak/
 
 .vscode/
 
-preprocessed_data/
+#preprocessed_data/
 program_data/
 sample_data/

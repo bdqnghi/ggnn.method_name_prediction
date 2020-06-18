@@ -168,7 +168,7 @@ class DenseGGNNModel():
 
         should_save_alignment_history = True
         # 0 mean testing
-        if is_evaluating == 0:
+        if self.is_evaluating == 0:
             should_save_alignment_history = False
 
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
@@ -178,7 +178,9 @@ class DenseGGNNModel():
         with tf.variable_scope("decode"):
             decoder_cell = tf.contrib.rnn.DropoutWrapper(decoder_cell, output_keep_prob=0.5)
             initial_state = decoder_cell.zero_state(batch_size, tf.float32).clone(cell_state=encoder_state)
-            target_embeddings = tf.nn.embedding_lookup(target_token_embeddings, targets)
+            # target_embeddings = tf.nn.embedding_lookup(target_token_embeddings, targets)
+            target_embeddings = tf.nn.embedding_lookup(target_token_embeddings,
+                                                            tf.concat([tf.expand_dims(tf.fill([batch_size], start_of_sequence_id), -1), targets], axis=-1))  # (batch, max_target_parts, dim * 2 + rnn_size)
             helper = tf.contrib.seq2seq.TrainingHelper(target_embeddings, target_sequence_length)
             decoder = tf.contrib.seq2seq.BasicDecoder(decoder_cell, helper, initial_state, output_layer)
             training_logits, training_final_state, _ = tf.contrib.seq2seq.dynamic_decode(decoder, 
@@ -276,7 +278,8 @@ class DenseGGNNModel():
             crossent = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets, logits=training_logits)
             # target_words_nonzero = tf.sequence_mask(target_lengths + 1,
             #                                         maxlen=self.config.MAX_TARGET_PARTS + 1, dtype=tf.float32)
-            loss = tf.reduce_sum(crossent)
+            # loss = tf.reduce_sum(crossent)
+            loss = tf.reduce_sum(crossent * target_mask) / tf.to_float(self.batch_size)
             return loss
     
     def aggregation_layer(self, nodes_representation):
