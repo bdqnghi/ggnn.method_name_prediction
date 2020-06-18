@@ -402,13 +402,11 @@ def main(opt):
                         ggnn.placeholders["adjacency_matrix"]:  val_batch_data['adjacency_matrix'],
                         ggnn.placeholders["node_type_indices"]: val_batch_data["node_type_indices"],
                         ggnn.placeholders["node_token_indices"]: val_batch_data["node_token_indices"],
-                        ggnn.placeholders["targets"]: val_batch_data["labels_sub_tokens"],
-                        ggnn.placeholders["length_targets"]: val_batch_data["length_targets"],
-                        ggnn.placeholders["node_indicators"]: val_batch_data["node_indicators"],
-                        ggnn.placeholders["is_training"]: True
+                        ggnn.placeholders["is_training"]: False
                     }
                 )
 
+        
                 batch_predicted_indices = prediction_scores[0].predicted_ids
                 batch_top_scores = prediction_scores[0].beam_search_decoder_output.scores
                 # print(prediction_scores[0].predicted_ids)
