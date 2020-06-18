@@ -256,13 +256,24 @@ class DenseGGNNModel():
             biases = tf.Variable(self.xavier_initializer([output_size,]))
             return tf.nn.leaky_relu(tf.matmul(pooled, weights) + biases)
 
+    # def loss_layer(self, training_logits, targets, target_mask):
+    #     """Create a loss layer for training."""
+       
+
+    #     with tf.name_scope('loss_layer'):
+    #         loss = tf.contrib.seq2seq.sequence_loss(training_logits,targets,target_mask)
+
+    #         return loss
+
     def loss_layer(self, training_logits, targets, target_mask):
         """Create a loss layer for training."""
        
 
         with tf.name_scope('loss_layer'):
-            loss = tf.contrib.seq2seq.sequence_loss(training_logits,targets,target_mask)
-
+            crossent = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets, logits=training_logits)
+            # target_words_nonzero = tf.sequence_mask(target_lengths + 1,
+            #                                         maxlen=self.config.MAX_TARGET_PARTS + 1, dtype=tf.float32)
+            loss = tf.reduce_sum(crossent * target_mask) / tf.to_float(self.batch_size)
             return loss
     
     def aggregation_layer(self, nodes_representation):

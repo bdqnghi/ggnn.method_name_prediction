@@ -224,26 +224,18 @@ def main(opt):
     loss_node = ggnn.loss
     optimizer = tf.compat.v1.train.AdamOptimizer(opt.lr)
 
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
-        training_point = optimizer.minimize(loss_node)
+    # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    # with tf.control_dependencies(update_ops):
+    params = tf.trainable_variables()
+    gradients = tf.gradients(loss_node, params)
+    clipped_gradients, _ = tf.clip_by_global_norm(gradients, clip_norm=5)
+    training_point = optimizer.apply_gradients(zip(clipped_gradients, params))
+
+        # training_point = optimizer.minimize(loss_node)
 
     saver = tf.train.Saver(save_relative_paths=True, max_to_keep=5)
     init = tf.global_variables_initializer()
-    
-    total_parameters = 0
-    for variable in tf.trainable_variables():
-        # shape is an array of tf.Dimension
-        shape = variable.get_shape()
-        print(shape)
-        print(len(shape))
-        variable_parameters = 1
-        for dim in shape:
-            print(dim)
-            variable_parameters *= dim.value
-        print(variable_parameters)
-        total_parameters += variable_parameters
-    print(total_parameters)
+
 
 
     best_f1_score = get_best_f1_score(opt)
