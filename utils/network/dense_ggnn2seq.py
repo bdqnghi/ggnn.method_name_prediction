@@ -168,8 +168,8 @@ class DenseGGNNModel():
 
         should_save_alignment_history = True
         # 0 mean testing
-        if self.is_evaluating == 0:
-            should_save_alignment_history = False
+        # if self.is_evaluating == 0:
+        #     should_save_alignment_history = False
 
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
                                                            attention_layer_size=rnn_size, alignment_history=should_save_alignment_history)
