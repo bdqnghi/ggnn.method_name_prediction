@@ -169,10 +169,11 @@ class DenseGGNNModel():
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
                                                            attention_layer_size=rnn_size)
 
-        decoder_cell = tf.contrib.rnn.DropoutWrapper(decoder_cell, output_keep_prob=0.5)
+        
         
         output_layer = tf.layers.Dense(target_vocab_size)
         with tf.variable_scope("decode"):
+            decoder_cell = tf.contrib.rnn.DropoutWrapper(decoder_cell, output_keep_prob=0.5)
             initial_state = decoder_cell.zero_state(batch_size, tf.float32).clone(cell_state=encoder_state)
             target_embeddings = tf.nn.embedding_lookup(target_token_embeddings, targets)
             helper = tf.contrib.seq2seq.TrainingHelper(target_embeddings, target_sequence_length)
