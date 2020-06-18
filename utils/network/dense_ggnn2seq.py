@@ -278,8 +278,8 @@ class DenseGGNNModel():
             crossent = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets, logits=training_logits)
             # target_words_nonzero = tf.sequence_mask(target_lengths + 1,
             #                                         maxlen=self.config.MAX_TARGET_PARTS + 1, dtype=tf.float32)
-            # loss = tf.reduce_sum(crossent)
-            loss = tf.reduce_sum(crossent * target_mask) / tf.to_float(self.batch_size)
+            loss = tf.reduce_sum(crossent)
+            # loss = tf.reduce_sum(crossent * target_mask) / tf.to_float(self.batch_size)
             return loss
     
     def aggregation_layer(self, nodes_representation):
