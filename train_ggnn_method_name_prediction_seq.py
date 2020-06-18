@@ -425,7 +425,7 @@ def main(opt):
                     highest_score_prediction_string = predicted_strings[top_scores_max]
                     highest_score_prediction_string_temp = []
                     for token in highest_score_prediction_string:
-                        if token != "<GO>" and token_id != "<PAD>" and token != "<EOS>":
+                        if token != "<GO>" and token != "<PAD>" and token != "<EOS>":
                             highest_score_prediction_string_temp.append(token)
                     predicted_labels.append("_".join(highest_score_prediction_string_temp))
 
